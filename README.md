@@ -34,9 +34,9 @@ All models can be trained for
 
 If you don't have conda installed, please install it following the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
-```git clone https://github.com/ines-chami/hgcn.git```
+```git clone https://github.com/HazyResearch/hypergcn.git```
 
-```cd hgcn```
+```cd hypergcn```
 
 ```conda env create -f environment.yml```
 
@@ -190,8 +190,6 @@ Then train a MLP for node classification on pre-trained embeddings:
  * Hyperboloid implementation of HyperGCN
  * Hyperbolic Attention in HyperGCN with local hyperbolic average 
  * Reproducible training commands for other datasets 
- * More efficient negative sampling implementation for link prediction
-
 
 ## Some of the code was forked from the following repositories
 
