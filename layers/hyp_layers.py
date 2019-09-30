@@ -8,7 +8,7 @@ import torch.nn.init as init
 from torch.nn.modules.module import Module
 from torch.nn.parameter import Parameter
 
-from models.att_layers import DenseAtt
+from layers.att_layers import DenseAtt
 
 
 def get_dim_act_curv(args):
@@ -46,19 +46,14 @@ class HNNLayer(nn.Module):
     Hyperbolic neural networks layer.
     """
 
-    def __init__(self, manifold, in_features, out_features, c, dropout, act, bias):
+    def __init__(self, manifold, in_features, out_features, c, dropout, act, use_bias):
         super(HNNLayer, self).__init__()
-        self.linear = HypLinear(manifold, in_features, out_features, c, dropout)
-        self.bias = bias
-        if self.bias:
-            self.bias_add = HypBias(manifold, out_features, c)
+        self.linear = HypLinear(manifold, in_features, out_features, c, dropout, use_bias)
         self.hyp_act = HypAct(manifold, c, c, act)
 
     def forward(self, x):
         h = self.linear.forward(x)
-        if self.bias:
-            h = self.bias_add.forward(h)
-        #h = self.hyp_act.forward(h)
+        h = self.hyp_act.forward(h)
         return h
 
 
@@ -67,20 +62,15 @@ class HyperbolicGraphConvolution(nn.Module):
     Hyperbolic graph convolution layer.
     """
 
-    def __init__(self, manifold, in_features, out_features, c_in, c_out, dropout, act, bias, use_att):
+    def __init__(self, manifold, in_features, out_features, c_in, c_out, dropout, act, use_bias, use_att):
         super(HyperbolicGraphConvolution, self).__init__()
-        self.linear = HypLinear(manifold, in_features, out_features, c_in, dropout)
-        self.bias = bias
-        if bias:
-            self.bias_add = HypBias(manifold, out_features, c_in)
+        self.linear = HypLinear(manifold, in_features, out_features, c_in, dropout, use_bias)
         self.agg = HypAgg(manifold, c_in, use_att, out_features, dropout)
         self.hyp_act = HypAct(manifold, c_in, c_out, act)
 
     def forward(self, input):
         x, adj = input
         h = self.linear.forward(x)
-        if self.bias:
-            h = self.bias_add.forward(h)
         h = self.agg.forward(h, adj)
         h = self.hyp_act.forward(h)
         output = h, adj
@@ -92,53 +82,38 @@ class HypLinear(nn.Module):
     Hyperbolic linear layer.
     """
 
-    def __init__(self, manifold, in_features, out_features, c, dropout):
+    def __init__(self, manifold, in_features, out_features, c, dropout, use_bias):
         super(HypLinear, self).__init__()
         self.manifold = manifold
         self.in_features = in_features
         self.out_features = out_features
         self.c = c
         self.dropout = dropout
+        self.use_bias = use_bias
+        self.bias = nn.Parameter(torch.Tensor(out_features))
         self.weight = nn.Parameter(torch.Tensor(out_features, in_features))
         self.reset_parameters()
 
     def reset_parameters(self):
         init.xavier_uniform_(self.weight, gain=math.sqrt(2))
+        init.constant_(self.bias, 0)
 
     def forward(self, x):
-        # dropConnect
         drop_weight = F.dropout(self.weight, self.dropout, training=self.training)
         mv = self.manifold.mobius_matvec(drop_weight, x, self.c)
-        return mv
+        res = self.manifold.proj(mv, self.c)
+        if self.use_bias: 
+            bias = self.manifold.proj_tan0(self.bias, self.c)
+            hyp_bias = self.manifold.expmap0(bias, self.c)
+            hyp_bias = self.manifold.proj(hyp_bias, self.c)
+            res = self.manifold.mobius_add(res, hyp_bias, c=self.c)
+            res = self.manifold.proj(res, self.c)
+        return res
+        
 
     def extra_repr(self):
         return 'in_features={}, out_features={}, c={}'.format(
                 self.in_features, self.out_features, self.c
-        )
-
-
-class HypBias(nn.Module):
-    """
-    Hyperbolic bias addition.
-    """
-
-    def __init__(self, manifold, n_features, c):
-        super(HypBias, self).__init__()
-        self.manifold = manifold
-        self.n_features = n_features
-        self.c = c
-        self.bias = nn.Parameter(torch.Tensor(n_features))
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        init.constant_(self.bias, 0)
-
-    def forward(self, x):
-        return self.manifold.add_euc_bias(x, self.bias, c=self.c)
-
-    def extra_repr(self):
-        return 'n_features={}, c={}'.format(
-                self.n_features, self.c
         )
 
 
@@ -147,7 +122,7 @@ class HypAgg(Module):
     Hyperbolic aggregation layer.
     """
 
-    def __init__(self, manifold, c, use_att, in_features, dropout=0.):
+    def __init__(self, manifold, c, use_att, in_features, dropout):
         super(HypAgg, self).__init__()
         self.manifold = manifold
         self.c = c

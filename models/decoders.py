@@ -3,8 +3,8 @@ import manifolds
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.att_layers import GraphAttentionLayer
-from models.layers import GraphConvolution, Linear
+from layers.att_layers import GraphAttentionLayer
+from layers.layers import GraphConvolution, Linear
 
 
 class Decoder(nn.Module):
@@ -17,62 +17,54 @@ class Decoder(nn.Module):
         self.c = c
 
     def decode(self, x, adj):
-        raise NotImplementedError
+        if self.decode_adj:
+            input = (x, adj)
+            probs, _ = self.cls.forward(input)
+        else:
+            probs = self.cls.forward(x)
+        return probs
 
 
-class GCN(Decoder):
+class GCNDecoder(Decoder):
     """
     Graph Convolution Decoder.
     """
 
     def __init__(self, c, args):
-        super(GCN, self).__init__(c)
+        super(GCNDecoder, self).__init__(c)
         act = lambda x: x
-        self.gc_cls = GraphConvolution(args.dim, args.n_classes, args.dropout, act, args.bias)
-
-    def decode(self, h, adj):
-        input = (h, adj)
-        probs, _ = self.gc_cls.forward(input)
-        return probs
+        self.cls = GraphConvolution(args.dim, args.n_classes, args.dropout, act, args.bias)
+        self.decode_adj = True
 
 
-class GAT(Decoder):
+class GATDecoder(Decoder):
     """
     Graph Attention Decoder.
     """
 
     def __init__(self, c, args):
-        super(GAT, self).__init__(c)
-        act = F.elu
-        n_heads = 1
-        self.gat_cls = GraphAttentionLayer(args.dim, args.n_classes, args.dropout, act, args.alpha, n_heads,
-                                           concat=False)
-
-    def decode(self, h, adj):
-        input = (h, adj)
-        output = self.gat_cls.forward(input)
-        probs, _ = output
-        return probs
+        super(GATDecoder, self).__init__(c)
+        self.cls = GraphAttentionLayer(args.dim, args.n_classes, args.dropout, F.elu, args.alpha, 1, True)
+        self.decode_adj = True
 
 
-class LinearClassifier(Decoder):
+class LinearDecoder(Decoder):
     """
     MLP Decoder for Hyperbolic/Euclidean node classification models.
     """
 
     def __init__(self, c, args):
-        super(LinearClassifier, self).__init__(c)
+        super(LinearDecoder, self).__init__(c)
         self.manifold = getattr(manifolds, args.manifold)()
         self.input_dim = args.dim
         self.output_dim = args.n_classes
         self.bias = args.bias
-        act = lambda x: x
-        self.cls = Linear(self.input_dim, self.output_dim, args.dropout, act, self.bias)
+        self.cls = Linear(self.input_dim, self.output_dim, args.dropout, lambda x: x, self.bias)
+        self.decode_adj = False
 
     def decode(self, x, adj):
-        h = self.manifold.logmap0(x, c=self.c)
-        probs = self.cls.forward(h)
-        return probs
+        h = self.manifold.proj_tan0(self.manifold.logmap0(x, c=self.c), c=self.c)
+        return super(LinearDecoder, self).decode(h, adj)
 
     def extra_repr(self):
         return 'in_features={}, out_features={}, bias={}, c={}'.format(
@@ -80,46 +72,12 @@ class LinearClassifier(Decoder):
         )
 
 
-class HNN(LinearClassifier):
-    """
-    Hyperbolic Neural Networks Euclidean classifier.
-    """
+model2decoder = {
+    'GCN': GCNDecoder,
+    'GAT': GATDecoder,
+    'HNN': LinearDecoder,
+    'HyperGCN': LinearDecoder,
+    'MLP': LinearDecoder,
+    'Shallow': LinearDecoder,
+}
 
-    def __init__(self, c, args):
-        super(HNN, self).__init__(c, args)
-
-
-class HyperGCN(LinearClassifier):
-    """
-    Hyperbolic Neural Networks Euclidean classifier.
-    """
-
-    def __init__(self, c, args):
-        super(HyperGCN, self).__init__(c, args)
-
-
-class HGCN(LinearClassifier):
-    """
-    Linear classifier on top of pre-trained shallow embeddings.
-    """
-
-    def __init__(self, c, args):
-        super(HGCN, self).__init__(c, args)
-
-
-class MLP(LinearClassifier):
-    """
-    Hyperbolic Neural Networks Euclidean classifier.
-    """
-
-    def __init__(self, c, args):
-        super(MLP, self).__init__(c, args)
-
-
-class Shallow(LinearClassifier):
-    """
-    Linear classifier on top of pre-trained shallow embeddings.
-    """
-
-    def __init__(self, c, args):
-        super(Shallow, self).__init__(c, args)

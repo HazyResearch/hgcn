@@ -6,10 +6,10 @@ import torch.nn.functional as F
 
 
 class DenseAtt(nn.Module):
-    def __init__(self, in_features, dropout, act, bias=True):
+    def __init__(self, in_features, dropout, act):
         super(DenseAtt, self).__init__()
         self.dropout = dropout
-        self.linear = nn.Linear(2 * in_features, 1, bias)
+        self.linear = nn.Linear(2 * in_features, 1, bias=True)
         self.act = act
         self.in_features = in_features
 

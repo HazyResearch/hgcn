@@ -1,4 +1,4 @@
-from manifolds.manifold import Manifold
+from manifolds.base import Manifold
 
 
 class Euclidean(Manifold):
@@ -15,7 +15,7 @@ class Euclidean(Manifold):
         p.view(-1, dim).renorm_(2, 0, 1.)
         return p
 
-    def dist(self, p1, p2, c):
+    def sqdist(self, p1, p2, c):
         return (p1 - p2).pow(2).sum(dim=-1)
 
     def egrad2rgrad(self, p, dp, c):
@@ -52,9 +52,6 @@ class Euclidean(Manifold):
     def init_weights(self, w, c, irange=1e-5):
         w.data.uniform_(-irange, irange)
         return w
-
-    def add_euc_bias(self, p, euc_b, c):
-        return p + euc_b
 
     def inner(self, p, c, u, v=None, keepdim=False):
         if v is None:

@@ -7,7 +7,7 @@ config_args = {
         'lr': (0.01, 'learning rate'),
         'dropout': (0.0, 'dropout probability'),
         'cuda': (-1, 'which cuda device to use (-1 for cpu training)'),
-        'epochs': (1000, 'maximum number of epochs to train for'),
+        'epochs': (5000, 'maximum number of epochs to train for'),
         'weight-decay': (0., 'l2 regularization strength'),
         'optimizer': ('Adam', 'which optimizer to use, can be any of [Adam, RiemannianAdam]'),
         'momentum': (0.999, 'momentum in optimizer'),
@@ -20,13 +20,12 @@ config_args = {
         'sweep-c': (0, ''),
         'lr-reduce-freq': (None, 'reduce lr every lr-reduce-freq or None to keep lr constant'),
         'gamma': (0.5, 'gamma for lr scheduler'),
-        'split-seed': (1234, 'seed for data splits (train/test/val)'),
         'print-epoch': (True, ''),
         'grad-clip': (None, 'max norm for gradient clipping, or None for no gradient clipping'),
         'min-epochs': (100, 'do not early stop before min-epochs')
     },
     'model_config': {
-        'task': ('nc', 'which tasks to train on, can be any of [lp, rec, nc]'),
+        'task': ('nc', 'which tasks to train on, can be any of [lp, nc]'),
         'model': ('GCN', 'which encoder to use, can be any of [Shallow, MLP, HNN, GCN, GAT, HyperGCN]'),
         'dim': (128, 'embedding dimension'),
         'manifold': ('Euclidean', 'which manifold to use, can be any of [Euclidean, Hyperboloid, PoincareBall]'),
@@ -40,7 +39,8 @@ config_args = {
         'act': ('relu', 'which activation function to use (or None for no activation)'),
         'n-heads': (4, 'number of attention heads for graph attention networks, must be a divisor dim'),
         'alpha': (0.2, 'alpha for leakyrelu in graph attention networks'),
-        'use-att': (0, 'whether to use hyperbolic attention in HyperGCN model')
+        'use-att': (0, 'whether to use hyperbolic attention in HyperGCN model'),
+        'double-precision': ('0', 'whether to use double precision')
     },
     'data_config': {
         'dataset': ('cora', 'which dataset to use'),
@@ -49,6 +49,7 @@ config_args = {
         'use-feats': (1, 'whether to use node features or not'),
         'normalize-feats': (1, 'whether to normalize input node features'),
         'normalize-adj': (1, 'whether to row-normalize the adjacency matrix'),
+        'split-seed': (1234, 'seed for data splits (train/test/val)'),
     }
 }
 

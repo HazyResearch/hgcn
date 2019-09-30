@@ -1,14 +1,14 @@
 import manifolds
 import models.encoders as encoders
-import models.decoders as decoders
 import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-import models.hyp_layers as hyp_layers
-from models.layers import FermiDiracDecoder
+import layers.hyp_layers as hyp_layers
+from models.decoders import model2decoder
+from layers.layers import FermiDiracDecoder
 from sklearn.metrics import roc_auc_score, average_precision_score
-from utils.eval_utils import acc_f1, mean_average_precision
+from utils.eval_utils import acc_f1
 
 
 class BaseModel(nn.Module):
@@ -19,13 +19,11 @@ class BaseModel(nn.Module):
     def __init__(self, args):
         super(BaseModel, self).__init__()
         self.manifold_name = args.manifold
-        # self.c is used for the last hyperbolic layer
         if args.c is not None:
             self.c = torch.tensor([args.c])
             if not args.cuda == -1:
                 self.c = self.c.to(args.device)
         else:
-            # trainable curvature
             self.c = nn.Parameter(torch.Tensor([1.]))
         self.manifold = getattr(manifolds, self.manifold_name)()
         self.nnodes = args.n_nodes
@@ -52,7 +50,7 @@ class NCModel(BaseModel):
 
     def __init__(self, args):
         super(NCModel, self).__init__(args)
-        self.decoder = getattr(decoders, args.model)(self.c, args)
+        self.decoder = model2decoder[args.model](self.c, args)
         if args.n_classes > 2:
             self.f1_average = 'micro'
         else:
@@ -99,8 +97,8 @@ class LPModel(BaseModel):
             h = self.manifold.normalize(h)
         emb_in = h[idx[:, 0], :]
         emb_out = h[idx[:, 1], :]
-        dist = self.manifold.dist(emb_in, emb_out, self.c)
-        probs = self.dc.forward(dist)
+        sqdist = self.manifold.sqdist(emb_in, emb_out, self.c)
+        probs = self.dc.forward(sqdist)
         return probs
 
     def compute_metrics(self, embeddings, data, split):
@@ -128,58 +126,3 @@ class LPModel(BaseModel):
     def has_improved(self, m1, m2):
         return 0.5 * (m1['roc'] + m1['ap']) < 0.5 * (m2['roc'] + m2['ap'])
 
-
-class RECModel(LPModel):
-    """
-    Base model for graph reconstruction task.
-    """
-
-    def __init__(self, args, compute_map=False):
-        super(RECModel, self).__init__(args)
-        self.compute_map = compute_map
-
-    def decode_all(self, z):
-        z = self.manifold.normalize(z)
-        if self.manifold_name == 'Euclidean':
-            dot = torch.mm(z, z.t())
-            norm = torch.sum(z ** 2, 1)
-            dist_mat = -2 * dot + norm.view(-1, 1) + norm.view(1, -1)
-        else:
-            # TODO: tensorized hyp distances
-            dist_mat = torch.zeros((self.nnodes, self.nnodes))
-            for i in range(self.nnodes):
-                emb_in = z[[i] * self.nnodes, :]
-                emb_out = z[list(range(self.nnodes)), :]
-                dist_mat[i, :] = self.manifold.dist(emb_in, emb_out)
-        rec_mat = self.dc.forward(dist_mat)
-        return rec_mat
-
-    def compute_metrics(self, embeddings, data, split):
-        pos_scores = self.decode(embeddings, data[f'train_edges'])
-        edges_false = data[f'train_edges_false'][np.random.randint(0, self.nb_false_edges, self.nb_edges)]
-        neg_scores = self.decode(embeddings, edges_false)
-        loss = F.binary_cross_entropy(pos_scores, torch.ones_like(pos_scores))
-        loss += F.binary_cross_entropy(neg_scores, torch.zeros_like(neg_scores))
-        if pos_scores.is_cuda:
-            pos_scores = pos_scores.cpu()
-            neg_scores = neg_scores.cpu()
-        labels = [1] * pos_scores.shape[0] + [0] * neg_scores.shape[0]
-        preds = list(pos_scores.data.numpy()) + list(neg_scores.data.numpy())
-        roc = roc_auc_score(labels, preds)
-        ap = average_precision_score(labels, preds)
-        metrics = {'loss': loss, 'roc': roc, 'ap': ap}
-        if self.compute_map:
-            # this is slow for large graphs.
-            all_scores = self.decode_all(embeddings.cpu()).data.numpy()
-            map_score = mean_average_precision(data['adj_train'].toarray(), all_scores)
-            metrics['map'] = map_score
-        return metrics
-
-    def init_metric_dict(self):
-        if self.compute_map:
-            return {'map': -1, 'roc': -1, 'ap': -1, 'loss': -1}
-        else:
-            return {'roc': -1, 'ap': -1, 'loss': -1}
-
-    def has_improved(self, m1, m2):
-        return 0.5 * (m1['roc'] + m1['ap']) < 0.5 * (m2['roc'] + m2['ap'])

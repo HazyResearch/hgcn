@@ -12,7 +12,7 @@ import numpy as np
 import optimizers
 import torch
 from config import parser
-from models.base_models import NCModel, LPModel, RECModel
+from models.base_models import NCModel, LPModel
 from utils.data_utils import load_data
 from utils.train_utils import get_dir_name, format_metrics
 
@@ -20,6 +20,8 @@ from utils.train_utils import get_dir_name, format_metrics
 def train(args):
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+    if int(args.double_precision):
+        torch.set_default_dtype(torch.float64)
     if int(args.cuda) >= 0:
         torch.cuda.manual_seed(args.seed)
     args.device = 'cuda:' + str(args.cuda) if int(args.cuda) >= 0 else 'cpu'
