@@ -21,7 +21,7 @@ This repository is a graph representation learning library, containing an implem
 
   * Graph Convolutional Neural Networks (```GCN```) [[4]](https://arxiv.org/pdf/1609.02907.pdf)
   * Graph Attention Networks (```GAT```) [[5]](https://arxiv.org/pdf/1710.10903.pdf)
-  * Hyperbolic Graph Convolutions (```HyperGCN```) [[1]](http://web.stanford.edu/~chami/files/hgcn.pdf)
+  * Hyperbolic Graph Convolutions (```HypGCN```) [[1]](http://web.stanford.edu/~chami/files/hgcn.pdf)
 
 All models can be trained for 
 
@@ -34,15 +34,19 @@ All models can be trained for
 
 If you don't have conda installed, please install it following the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
-```git clone https://github.com/HazyResearch/hypergcn.git```
+```git clone https://github.com/HazyResearch/hypgcn```
 
-```cd hypergcn```
+```cd hypgcn```
 
 ```conda env create -f environment.yml```
 
 ### 2.2 Datasets
 
-The ```data/``` folder contains source files for cora and pubmed benchmarks. 
+The ```data/``` folder contains source files for:
+
+  * Cora
+  * Pubmed
+
 To run this code on new datasets, please add corresponding data processing and loading in ```load_data_nc``` and ```load_data_lp``` functions in ```utils/data_utils.py```.
 
 ## 3. Usage
@@ -80,8 +84,8 @@ optional arguments:
   --eval-freq EVAL_FREQ
                         how often to compute val metrics (in epochs)
   --save SAVE           1 to save model and logs and 0 otherwise
-  --save-dir SAVE_DIR   path to save training logs (defaults to
-                        logs/task/date/run/)
+  --save-dir SAVE_DIR   path to save training logs and model weights (defaults
+                        to logs/task/date/run/)
   --sweep-c SWEEP_C
   --lr-reduce-freq LR_REDUCE_FREQ
                         reduce lr every lr-reduce-freq or None to keep lr
@@ -95,7 +99,7 @@ optional arguments:
                         do not early stop before min-epochs
   --task TASK           which tasks to train on, can be any of [lp, nc]
   --model MODEL         which encoder to use, can be any of [Shallow, MLP,
-                        HNN, GCN, GAT, HyperGCN]
+                        HNN, GCN, GAT, HypGCN]
   --dim DIM             embedding dimension
   --manifold MANIFOLD   which manifold to use, can be any of [Euclidean,
                         Hyperboloid, PoincareBall]
@@ -116,7 +120,7 @@ optional arguments:
   --n-heads N_HEADS     number of attention heads for graph attention
                         networks, must be a divisor dim
   --alpha ALPHA         alpha for leakyrelu in graph attention networks
-  --use-att USE_ATT     whether to use hyperbolic attention in HyperGCN model
+  --use-att USE_ATT     whether to use hyperbolic attention in HypGCN model
   --double-precision DOUBLE_PRECISION
                         whether to use double precision
   --dataset DATASET     which dataset to use
@@ -135,7 +139,29 @@ optional arguments:
 
 ## 4. Examples
 
-### 4.1 Link prediction on cora dataset
+We provide examples of training commands used to train HypGCN and other graph embedding models for link prediction and node classification. In the examples below, we used a fixed random seed set to 1234 for reproducibility purposes. Note that results might slightly vary based on the machine used. To reproduce results in the paper, run each commad for 10 random seeds and average the results.
+
+### 4.1 Training HypGCN
+
+#### Link prediction
+
+ * Cora (Test ROC-AUC=93.79): 
+
+```python train.py --task lp --dataset cora --model HypGCN --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.5 --weight-decay 0.001 --manifold PoincareBall --log-freq 5 --cuda 0 --c None```
+
+ * Pubmed (Test ROC-AUC: 95.17):
+
+```python train.py --task lp --dataset pubmed --model HypGCN --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.4 --weight-decay 0.0001 --manifold PoincareBall --log-freq 5 --cuda 0``` 
+
+#### Node classification
+
+To train train a HypGCN node classification model, pre-train embeddings for link prediction as decribed in the previous section. Then train a MLP classifier using the pre-trained embeddings (```embeddings.npy``` file saved in the ```save-dir``` directory). For instance for the Pubmed dataset:
+ 
+```python train.py --task nc --dataset pubmed --model Shallow --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.2 --weight-decay 0.0005 --manifold Euclidean --log-freq 5 --cuda 0 --use-feats 0 --pretrained-embeddings [PATH_TO_EMBEDDINGS]```
+
+### 4.3 Train other graph embedding models
+
+#### Link prediction on the Cora dataset
 
  * Shallow Euclidean (Test ROC-AUC=86.40): 
 
@@ -153,11 +179,7 @@ optional arguments:
 
 ```python train.py --task lp --dataset cora --model HNN --lr 0.01 --dim 16 --num-layers 2 --act None --bias 1 --dropout 0.2 --weight-decay 0.001 --manifold PoincareBall --log-freq 5 --cuda 0 --c 1```
 
- * HyperGCN (Test ROC-AUC=93.79): 
-
-```python train.py --task lp --dataset cora --model HyperGCN --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.5 --weight-decay 0.001 --manifold PoincareBall --log-freq 5 --cuda 0 --c None```
- 
-### 4.2 Node classification on pubmed dataset
+#### Node classification on the Pubmed dataset
 
  * HNN (Test accuracy=68.20): 
  
@@ -175,21 +197,11 @@ optional arguments:
 
 ```python train.py --task nc --dataset pubmed --model GAT --lr 0.01 --dim 16 --num-layers 2 --act elu --bias 1 --dropout 0.5 --weight-decay 0.0005 --alpha 0.2 --n-heads 4 --manifold Euclidean --log-freq 5 --cuda 0```
 
- * HyperGCN (Test accuracy=80.40): 
- 
-First pre-train embeddings for link prediction (Test ROC-AUC: 95.17. For simplicity, we saved pre-trained HyperGCN embeddings in ```data/pubmed/hypergcn.npy```: 
- 
-``` python train.py --task lp --dataset pubmed --model HyperGCN --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.4 --weight-decay 0.0001 --manifold PoincareBall --log-freq 5 --cuda 0``` 
- 
-Then train a MLP for node classification on pre-trained embeddings:
- 
-```python train.py --task nc --dataset pubmed --model Shallow --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.2 --weight-decay 0.0005 --manifold Euclidean --log-freq 5 --cuda 0 --use-feats 0 --pretrained-embeddings data/pubmed/hypergcn.npy``` 
- 
 ## Coming soon
 
- * Hyperboloid implementation of HyperGCN
- * Hyperbolic Attention in HyperGCN with local hyperbolic average 
- * Reproducible training commands for other datasets 
+ * Hyperboloid implementation of HypGCN
+ * Hyperbolic Attention in HypGCN with local hyperbolic average 
+ * More efficient negative sampling implementation for link prediction
 
 ## Some of the code was forked from the following repositories
 

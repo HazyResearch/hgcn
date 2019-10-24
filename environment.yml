@@ -1,4 +1,4 @@
-name: hgcn
+name: hypgcn
 channels:
   - pytorch
   - defaults
