@@ -65,19 +65,8 @@ def sparse_mx_to_torch_sparse_tensor(sparse_mx):
     return torch.sparse.FloatTensor(indices, values, shape)
 
 
-# ############### LINK PREDICTION DATA LOADERS ####################################
+# ############### DATA SPLITS #####################################################
 
-
-def load_data_lp(dataset, use_feats, data_path):
-    if dataset in ['cora', 'pubmed']:
-        adj, features = load_citation_data(dataset, use_feats, data_path)[:2]
-    else:
-        raise FileNotFoundError('Dataset {} is not supported.'.format(dataset))
-    data = {'adj_train': adj, 'features': features}
-    return data
-
-
-# ############### NODE CLASSIFICATION DATA LOADERS ####################################
 
 def mask_edges(adj, val_prop, test_prop, seed):
     np.random.seed(seed)  # get tp edges
@@ -102,6 +91,40 @@ def mask_edges(adj, val_prop, test_prop, seed):
             test_edges_false)  
 
 
+def split_data(labels, val_prop, test_prop, seed):
+    np.random.seed(seed)
+    nb_nodes = labels.shape[0]
+    all_idx = np.arange(nb_nodes)
+    pos_idx = labels.nonzero()[0]
+    neg_idx = (1. - labels).nonzero()[0]
+    np.random.shuffle(pos_idx)
+    np.random.shuffle(neg_idx)
+    pos_idx = pos_idx.tolist()
+    neg_idx = neg_idx.tolist()
+    nb_pos_neg = min(len(pos_idx), len(neg_idx))
+    nb_val = round(val_prop * nb_pos_neg)
+    nb_test = round(test_prop * nb_pos_neg)
+    idx_val_pos, idx_test_pos, idx_train_pos = pos_idx[:nb_val], pos_idx[nb_val:nb_val + nb_test], pos_idx[
+                                                                                                   nb_val + nb_test:]
+    idx_val_neg, idx_test_neg, idx_train_neg = neg_idx[:nb_val], neg_idx[nb_val:nb_val + nb_test], neg_idx[
+                                                                                                   nb_val + nb_test:]
+    return idx_val_pos + idx_val_neg, idx_test_pos + idx_test_neg, idx_train_pos + idx_train_neg
+
+
+# ############### LINK PREDICTION DATA LOADERS ####################################
+
+
+def load_data_lp(dataset, use_feats, data_path):
+    if dataset in ['cora', 'pubmed']:
+        adj, features = load_citation_data(dataset, use_feats, data_path)[:2]
+    elif dataset == 'disease_lp':
+        adj, features = load_synthetic_data(dataset, use_feats, data_path)[:2]
+    else:
+        raise FileNotFoundError('Dataset {} is not supported.'.format(dataset))
+    data = {'adj_train': adj, 'features': features}
+    return data
+
+
 # ############### NODE CLASSIFICATION DATA LOADERS ####################################
 
 
@@ -111,7 +134,16 @@ def load_data_nc(dataset, use_feats, data_path, split_seed):
             dataset, use_feats, data_path, split_seed
         )
     else:
-        raise FileNotFoundError('Dataset {} is not supported.'.format(dataset))
+        if dataset == 'disease_nc':
+            val_prop, test_prop = 0.10, 0.60
+            adj, features, labels = load_synthetic_data(dataset, use_feats, data_path)
+        elif dataset == 'airport':
+            # TODO
+            val_prop, test_prop = 0.15, 0.15
+            pass
+        else:
+            raise FileNotFoundError('Dataset {} is not supported.'.format(dataset))
+        idx_val, idx_test, idx_train = split_data(labels, val_prop, test_prop, seed=split_seed)
 
     labels = torch.LongTensor(labels)
     data = {'adj_train': adj, 'features': features, 'labels': labels, 'idx_train': idx_train, 'idx_val': idx_val,
@@ -158,3 +190,36 @@ def parse_index_file(filename):
     for line in open(filename):
         index.append(int(line.strip()))
     return index
+
+
+def load_synthetic_data(dataset_str, use_feats, data_path):
+    object_to_idx = {}
+    idx_counter = 0
+    edges = []
+    with open(os.path.join(data_path, "{}.edges.csv".format(dataset_str)), 'r') as f:
+        all_edges = f.readlines()
+    for line in all_edges:
+        n1, n2 = line.rstrip().split(',')
+        if n1 in object_to_idx:
+            i = object_to_idx[n1]
+        else:
+            i = idx_counter
+            object_to_idx[n1] = i
+            idx_counter += 1
+        if n2 in object_to_idx:
+            j = object_to_idx[n2]
+        else:
+            j = idx_counter
+            object_to_idx[n2] = j
+            idx_counter += 1
+        edges.append((i, j))
+    adj = np.zeros((len(object_to_idx), len(object_to_idx)))
+    for i, j in edges:
+        adj[i, j] = 1.  # comment this line for directed adjacency matrix
+        adj[j, i] = 1.
+    if use_feats:
+        features = sp.load_npz(os.path.join(data_path, "{}.feats.npz".format(dataset_str)))
+    else:
+        features = sp.eye(adj.shape[0])
+    labels = np.load(os.path.join(data_path, "{}.labels.npy".format(dataset_str)))
+    return sp.csr_matrix(adj), features, labels

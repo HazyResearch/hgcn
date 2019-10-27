@@ -46,6 +46,7 @@ The ```data/``` folder contains source files for:
 
   * Cora
   * Pubmed
+  * Disease 
 
 To run this code on new datasets, please add corresponding data processing and loading in ```load_data_nc``` and ```load_data_lp``` functions in ```utils/data_utils.py```.
 
@@ -145,19 +146,29 @@ We provide examples of training commands used to train HGCN and other graph embe
 
 #### Link prediction
 
- * Cora (Test ROC-AUC=93.79): 
+  * Cora (Test ROC-AUC=93.79): 
 
 ```python train.py --task lp --dataset cora --model HGCN --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.5 --weight-decay 0.001 --manifold PoincareBall --log-freq 5 --cuda 0 --c None```
 
- * Pubmed (Test ROC-AUC: 95.17):
+  * Pubmed (Test ROC-AUC: 95.17):
 
 ```python train.py --task lp --dataset pubmed --model HGCN --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.4 --weight-decay 0.0001 --manifold PoincareBall --log-freq 5 --cuda 0``` 
 
+  * Disease (Test ROC-AUC: 87.14):
+
+``` python train.py --task lp --dataset disease_lp --model HGCN --lr 0.01 --dim 16 --num-layers 2 --num-layers 2 --act relu --bias 1 --dropout 0 --weight-decay 0 --manifold PoincareBall --normalize-feats 0 --log-freq 5```
+
 #### Node classification
 
-To train train a HGCN node classification model, pre-train embeddings for link prediction as decribed in the previous section. Then train a MLP classifier using the pre-trained embeddings (```embeddings.npy``` file saved in the ```save-dir``` directory). For instance for the Pubmed dataset:
+  * Cora and Pubmed: 
+
+To train train a HGCN node classification model on Cora and Pubmed datasets, pre-train embeddings for link prediction as decribed in the previous section. Then train a MLP classifier using the pre-trained embeddings (```embeddings.npy``` file saved in the ```save-dir``` directory). For instance for the Pubmed dataset:
  
 ```python train.py --task nc --dataset pubmed --model Shallow --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.2 --weight-decay 0.0005 --manifold Euclidean --log-freq 5 --cuda 0 --use-feats 0 --pretrained-embeddings [PATH_TO_EMBEDDINGS]```
+
+  * Disease (Test accuracy: 76.77):
+
+```python train.py --task nc --dataset disease_nc --model HGCN --dim 16 --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0 --weight-decay 0 --manifold PoincareBall --log-freq 5 --cuda 0```
 
 ### 4.3 Train other graph embedding models
 
