@@ -88,13 +88,13 @@ class GCN(Encoder):
         self.encode_graph = True
 
 
-class HypGCN(Encoder):
+class HGCN(Encoder):
     """
     Hyperbolic-GCN.
     """
 
     def __init__(self, c, args):
-        super(HypGCN, self).__init__(c)
+        super(HGCN, self).__init__(c)
         self.manifold = getattr(manifolds, args.manifold)()
         assert args.num_layers > 1
         dims, acts, self.curvatures = hyp_layers.get_dim_act_curv(args)
@@ -116,7 +116,7 @@ class HypGCN(Encoder):
         x_hyp = self.manifold.proj(
                 self.manifold.expmap0(self.manifold.proj_tan0(x, self.curvatures[0]), c=self.curvatures[0]),
                 c=self.curvatures[0])
-        return super(HypGCN, self).encode(x_hyp, adj)
+        return super(HGCN, self).encode(x_hyp, adj)
 
 
 class GAT(Encoder):

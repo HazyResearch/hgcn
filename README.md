@@ -21,7 +21,7 @@ This repository is a graph representation learning library, containing an implem
 
   * Graph Convolutional Neural Networks (```GCN```) [[4]](https://arxiv.org/pdf/1609.02907.pdf)
   * Graph Attention Networks (```GAT```) [[5]](https://arxiv.org/pdf/1710.10903.pdf)
-  * Hyperbolic Graph Convolutions (```HypGCN```) [[1]](http://web.stanford.edu/~chami/files/hgcn.pdf)
+  * Hyperbolic Graph Convolutions (```HGCN```) [[1]](http://web.stanford.edu/~chami/files/hgcn.pdf)
 
 All models can be trained for 
 
@@ -34,9 +34,9 @@ All models can be trained for
 
 If you don't have conda installed, please install it following the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
-```git clone https://github.com/HazyResearch/hypgcn```
+```git clone https://github.com/HazyResearch/hgcn```
 
-```cd hypgcn```
+```cd hgcn```
 
 ```conda env create -f environment.yml```
 
@@ -99,7 +99,7 @@ optional arguments:
                         do not early stop before min-epochs
   --task TASK           which tasks to train on, can be any of [lp, nc]
   --model MODEL         which encoder to use, can be any of [Shallow, MLP,
-                        HNN, GCN, GAT, HypGCN]
+                        HNN, GCN, GAT, HGCN]
   --dim DIM             embedding dimension
   --manifold MANIFOLD   which manifold to use, can be any of [Euclidean,
                         Hyperboloid, PoincareBall]
@@ -120,7 +120,7 @@ optional arguments:
   --n-heads N_HEADS     number of attention heads for graph attention
                         networks, must be a divisor dim
   --alpha ALPHA         alpha for leakyrelu in graph attention networks
-  --use-att USE_ATT     whether to use hyperbolic attention in HypGCN model
+  --use-att USE_ATT     whether to use hyperbolic attention in HGCN model
   --double-precision DOUBLE_PRECISION
                         whether to use double precision
   --dataset DATASET     which dataset to use
@@ -139,23 +139,23 @@ optional arguments:
 
 ## 4. Examples
 
-We provide examples of training commands used to train HypGCN and other graph embedding models for link prediction and node classification. In the examples below, we used a fixed random seed set to 1234 for reproducibility purposes. Note that results might slightly vary based on the machine used. To reproduce results in the paper, run each commad for 10 random seeds and average the results.
+We provide examples of training commands used to train HGCN and other graph embedding models for link prediction and node classification. In the examples below, we used a fixed random seed set to 1234 for reproducibility purposes. Note that results might slightly vary based on the machine used. To reproduce results in the paper, run each commad for 10 random seeds and average the results.
 
-### 4.1 Training HypGCN
+### 4.1 Training HGCN
 
 #### Link prediction
 
  * Cora (Test ROC-AUC=93.79): 
 
-```python train.py --task lp --dataset cora --model HypGCN --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.5 --weight-decay 0.001 --manifold PoincareBall --log-freq 5 --cuda 0 --c None```
+```python train.py --task lp --dataset cora --model HGCN --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.5 --weight-decay 0.001 --manifold PoincareBall --log-freq 5 --cuda 0 --c None```
 
  * Pubmed (Test ROC-AUC: 95.17):
 
-```python train.py --task lp --dataset pubmed --model HypGCN --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.4 --weight-decay 0.0001 --manifold PoincareBall --log-freq 5 --cuda 0``` 
+```python train.py --task lp --dataset pubmed --model HGCN --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.4 --weight-decay 0.0001 --manifold PoincareBall --log-freq 5 --cuda 0``` 
 
 #### Node classification
 
-To train train a HypGCN node classification model, pre-train embeddings for link prediction as decribed in the previous section. Then train a MLP classifier using the pre-trained embeddings (```embeddings.npy``` file saved in the ```save-dir``` directory). For instance for the Pubmed dataset:
+To train train a HGCN node classification model, pre-train embeddings for link prediction as decribed in the previous section. Then train a MLP classifier using the pre-trained embeddings (```embeddings.npy``` file saved in the ```save-dir``` directory). For instance for the Pubmed dataset:
  
 ```python train.py --task nc --dataset pubmed --model Shallow --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.2 --weight-decay 0.0005 --manifold Euclidean --log-freq 5 --cuda 0 --use-feats 0 --pretrained-embeddings [PATH_TO_EMBEDDINGS]```
 
@@ -199,8 +199,8 @@ To train train a HypGCN node classification model, pre-train embeddings for link
 
 ## Coming soon
 
- * Hyperboloid implementation of HypGCN
- * Hyperbolic Attention in HypGCN with local hyperbolic average 
+ * Hyperboloid implementation of HGCN
+ * Hyperbolic Attention in HGCN with local hyperbolic average 
  * More efficient negative sampling implementation for link prediction
 
 ## Some of the code was forked from the following repositories
