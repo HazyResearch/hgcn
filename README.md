@@ -30,7 +30,7 @@ All models can be trained for
 
 ## 2. Setup
 
-### 2.1 Installation
+### 2.1 Installation with conda
 
 If you don't have conda installed, please install it following the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
@@ -40,7 +40,17 @@ If you don't have conda installed, please install it following the instructions 
 
 ```conda env create -f environment.yml```
 
-### 2.2 Datasets
+### 2.2 Installation with pip
+
+Alternatively, if you prefer to install dependencies with pip, please follow the instructions below:
+
+```virtualenv -p [PATH to python3.7 binary] hgcn```
+
+```source hgcn/bin/activate```
+
+```pip install -r requirements.txt```
+
+### 2.3 Datasets
 
 The ```data/``` folder contains source files for:
 
@@ -156,7 +166,7 @@ We provide examples of training commands used to train HGCN and other graph embe
 
   * Disease (Test ROC-AUC: 87.14):
 
-``` python train.py --task lp --dataset disease_lp --model HGCN --lr 0.01 --dim 16 --num-layers 2 --num-layers 2 --act relu --bias 1 --dropout 0 --weight-decay 0 --manifold PoincareBall --normalize-feats 0 --log-freq 5```
+```python train.py --task lp --dataset disease_lp --model HGCN --lr 0.01 --dim 16 --num-layers 2 --num-layers 2 --act relu --bias 1 --dropout 0 --weight-decay 0 --manifold PoincareBall --normalize-feats 0 --log-freq 5```
 
 #### Node classification
 
