@@ -180,7 +180,7 @@ To train train a HGCN node classification model on Cora and Pubmed datasets, pre
 
 ```python train.py --task nc --dataset disease_nc --model HGCN --dim 16 --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0 --weight-decay 0 --manifold PoincareBall --log-freq 5 --cuda 0```
 
-### 4.3 Train other graph embedding models
+### 4.2 Train other graph embedding models
 
 #### Link prediction on the Cora dataset
 

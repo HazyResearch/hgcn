@@ -95,8 +95,6 @@ def train(args):
         embeddings = model.encode(data['features'], data['adj_train_norm'])
         train_metrics = model.compute_metrics(embeddings, data, 'train')
         train_metrics['loss'].backward()
-        #import IPython
-        #IPython.embed()
         if args.grad_clip is not None:
             max_norm = float(args.grad_clip)
             all_params = list(model.parameters())

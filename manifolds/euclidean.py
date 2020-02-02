@@ -60,3 +60,6 @@ class Euclidean(Manifold):
 
     def ptransp(self, x, y, v, c):
         return v
+
+    def ptransp0(self, x, v, c):
+        return x + v

@@ -1,6 +1,8 @@
+"""Poincare ball manifold."""
+
 import torch
+
 from manifolds.base import Manifold
-from torch.autograd import Function
 from utils.math_utils import artanh, tanh
 
 
@@ -125,3 +127,12 @@ class PoincareBall(Manifold):
         lambda_x = self._lambda_x(x, c)
         lambda_y = self._lambda_x(y, c)
         return self._gyration(y, -x, u, c) * lambda_x / lambda_y
+
+    def ptransp_(self, x, y, u, c):
+        lambda_x = self._lambda_x(x, c)
+        lambda_y = self._lambda_x(y, c)
+        return self._gyration(y, -x, u, c) * lambda_x / lambda_y
+
+    def ptransp0(self, x, u, c):
+        lambda_x = self._lambda_x(x, c)
+        return 2 * u / lambda_x.clamp_min(self.min_norm)

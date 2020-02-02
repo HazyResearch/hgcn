@@ -65,6 +65,10 @@ class Manifold(object):
         """Parallel transport of u from x to y."""
         raise NotImplementedError
 
+    def ptransp0(self, x, u, c):
+        """Parallel transport of u from the origin to y."""
+        raise NotImplementedError
+
 
 class ManifoldParameter(Parameter):
     """
