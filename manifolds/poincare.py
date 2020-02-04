@@ -117,11 +117,11 @@ class PoincareBall(Manifold):
         d = 1 + 2 * c * uv + c2 * u2 * v2
         return w + 2 * (a * u + b * v) / d.clamp_min(self.min_norm)
 
-    def inner(self, x, c, u, v=None, keepdim=False, dim=-1):
+    def inner(self, x, c, u, v=None, keepdim=False):
         if v is None:
             v = u
         lambda_x = self._lambda_x(x, c)
-        return lambda_x ** 2 * (u * v).sum(dim=dim, keepdim=keepdim)
+        return lambda_x ** 2 * (u * v).sum(dim=-1, keepdim=keepdim)
 
     def ptransp(self, x, y, u, c):
         lambda_x = self._lambda_x(x, c)
@@ -136,3 +136,10 @@ class PoincareBall(Manifold):
     def ptransp0(self, x, u, c):
         lambda_x = self._lambda_x(x, c)
         return 2 * u / lambda_x.clamp_min(self.min_norm)
+
+    def to_hyperboloid(self, x, c):
+        K = 1./ c
+        sqrtK = K ** 0.5
+        sqnorm = torch.norm(x, p=2, dim=1, keepdim=True) ** 2
+        return sqrtK * torch.cat([K + sqnorm, 2 * sqrtK * x], dim=1) / (K - sqnorm)
+

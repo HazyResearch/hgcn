@@ -1,13 +1,16 @@
-import manifolds
-import models.encoders as encoders
-import torch
+"""Base model class."""
+
 import numpy as np
+from sklearn.metrics import roc_auc_score, average_precision_score
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import layers.hyp_layers as hyp_layers
-from models.decoders import model2decoder
+
 from layers.layers import FermiDiracDecoder
-from sklearn.metrics import roc_auc_score, average_precision_score
+import layers.hyp_layers as hyp_layers
+import manifolds
+import models.encoders as encoders
+from models.decoders import model2decoder
 from utils.eval_utils import acc_f1
 
 
@@ -26,10 +29,15 @@ class BaseModel(nn.Module):
         else:
             self.c = nn.Parameter(torch.Tensor([1.]))
         self.manifold = getattr(manifolds, self.manifold_name)()
+        if self.manifold.name == 'Hyperboloid':
+            args.feat_dim = args.feat_dim + 1
         self.nnodes = args.n_nodes
         self.encoder = getattr(encoders, args.model)(self.c, args)
 
     def encode(self, x, adj):
+        if self.manifold.name == 'Hyperboloid':
+            o = torch.zeros_like(x)
+            x = torch.cat([o[:, 0:1], x], dim=1)
         h = self.encoder.encode(x, adj)
         return h
 

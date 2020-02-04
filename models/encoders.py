@@ -1,13 +1,15 @@
 """Graph encoders."""
-import manifolds
-import layers.hyp_layers as hyp_layers
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import utils.math_utils as pmath
+
+import manifolds
 from layers.att_layers import GraphAttentionLayer
+import layers.hyp_layers as hyp_layers
 from layers.layers import GraphConvolution, Linear, get_dim_act
+import utils.math_utils as pmath
 
 
 class Encoder(nn.Module):
@@ -106,7 +108,7 @@ class HGCN(Encoder):
             act = acts[i]
             hgc_layers.append(
                     hyp_layers.HyperbolicGraphConvolution(
-                            self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias, args.use_att
+                            self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias
                     )
             )
         self.layers = nn.Sequential(*hgc_layers)

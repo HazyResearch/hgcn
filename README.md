@@ -218,12 +218,6 @@ To train train a HGCN node classification model on Cora and Pubmed datasets, pre
 
 ```python train.py --task nc --dataset pubmed --model GAT --lr 0.01 --dim 16 --num-layers 2 --act elu --bias 1 --dropout 0.5 --weight-decay 0.0005 --alpha 0.2 --n-heads 4 --manifold Euclidean --log-freq 5 --cuda 0```
 
-## Coming soon
-
- * Hyperboloid implementation of HGCN
- * Hyperbolic Attention in HGCN with local hyperbolic average 
- * More efficient negative sampling implementation for link prediction
-
 ## Some of the code was forked from the following repositories
 
  * [pygcn](https://github.com/tkipf/pygcn/tree/master/pygcn)

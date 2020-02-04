@@ -1,3 +1,5 @@
+"""Euclidean manifold."""
+
 from manifolds.base import Manifold
 
 

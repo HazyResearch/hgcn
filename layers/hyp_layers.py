@@ -8,8 +8,6 @@ import torch.nn.init as init
 from torch.nn.modules.module import Module
 from torch.nn.parameter import Parameter
 
-from layers.att_layers import DenseAtt
-
 
 def get_dim_act_curv(args):
     """
@@ -62,10 +60,10 @@ class HyperbolicGraphConvolution(nn.Module):
     Hyperbolic graph convolution layer.
     """
 
-    def __init__(self, manifold, in_features, out_features, c_in, c_out, dropout, act, use_bias, use_att):
+    def __init__(self, manifold, in_features, out_features, c_in, c_out, dropout, act, use_bias):
         super(HyperbolicGraphConvolution, self).__init__()
         self.linear = HypLinear(manifold, in_features, out_features, c_in, dropout, use_bias)
-        self.agg = HypAgg(manifold, c_in, use_att, out_features, dropout)
+        self.agg = HypAgg(manifold, c_in, out_features, dropout)
         self.hyp_act = HypAct(manifold, c_in, c_out, act)
 
     def forward(self, input):
@@ -103,7 +101,7 @@ class HypLinear(nn.Module):
         mv = self.manifold.mobius_matvec(drop_weight, x, self.c)
         res = self.manifold.proj(mv, self.c)
         if self.use_bias: 
-            bias = self.manifold.proj_tan0(self.bias, self.c)
+            bias = self.manifold.proj_tan0(self.bias.view(1, -1), self.c)
             hyp_bias = self.manifold.expmap0(bias, self.c)
             hyp_bias = self.manifold.proj(hyp_bias, self.c)
             res = self.manifold.mobius_add(res, hyp_bias, c=self.c)
@@ -122,30 +120,22 @@ class HypAgg(Module):
     Hyperbolic aggregation layer.
     """
 
-    def __init__(self, manifold, c, use_att, in_features, dropout):
+    def __init__(self, manifold, c, in_features, dropout):
         super(HypAgg, self).__init__()
         self.manifold = manifold
         self.c = c
-        self.use_att = use_att
 
         self.in_features = in_features
         self.dropout = dropout
-        if use_att:
-            self.att = DenseAtt(in_features, dropout, lambda x: x)
 
     def forward(self, x, adj):
         x_tangent = self.manifold.logmap0(x, c=self.c)
-        if self.use_att:
-            # TODO : merge in sparse att layer
-            adj = self.att(x_tangent, adj)
         support_t = torch.spmm(adj, x_tangent)
         output = self.manifold.proj(self.manifold.expmap0(support_t, c=self.c), c=self.c)
         return output
 
     def extra_repr(self):
-        return 'c={}, use_att={}'.format(
-                self.c, self.use_att
-        )
+        return 'c={}'.format(self.c)
 
 
 class HypAct(Module):

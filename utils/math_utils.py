@@ -1,3 +1,5 @@
+"""Math utils functions."""
+
 import torch
 
 
@@ -55,7 +57,7 @@ class Arsinh(torch.autograd.Function):
 class Arcosh(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x):
-        x = x.clamp(min=1 + 1e-7)
+        x = x.clamp(min=1.0 + 1e-15)
         ctx.save_for_backward(x)
         z = x.double()
         return (z + torch.sqrt_(z.pow(2) - 1)).clamp_min_(1e-15).log_().to(x.dtype)
