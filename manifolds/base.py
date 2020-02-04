@@ -1,4 +1,7 @@
+"""Base manifold."""
+
 from torch.nn import Parameter
+
 
 class Manifold(object):
     """
@@ -57,7 +60,7 @@ class Manifold(object):
         """Initializes random weigths on the manifold."""
         raise NotImplementedError
 
-    def inner(self, p, c, u, v=None):
+    def inner(self, p, c, u, v=None, keepdim=False):
         """Inner product for tangent vectors at point x."""
         raise NotImplementedError
 
