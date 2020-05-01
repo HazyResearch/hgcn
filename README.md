@@ -223,6 +223,19 @@ To train train a HGCN node classification model on Cora and Pubmed datasets, pre
 
 ```python train.py --task nc --dataset pubmed --model GAT --lr 0.01 --dim 16 --num-layers 2 --act elu --bias 1 --dropout 0.5 --weight-decay 0.0005 --alpha 0.2 --n-heads 4 --manifold Euclidean --log-freq 5 --cuda 0```
 
+## Citation
+
+If you find this code useful, please cite the following paper: 
+```
+@inproceedings{chami2019hyperbolic,
+  title={Hyperbolic graph convolutional neural networks},
+  author={Chami, Ines and Ying, Zhitao and R{\'e}, Christopher and Leskovec, Jure},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={4869--4880},
+  year={2019}
+}
+```
+
 ## Some of the code was forked from the following repositories
 
  * [pygcn](https://github.com/tkipf/pygcn/tree/master/pygcn)
