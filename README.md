@@ -57,6 +57,7 @@ The ```data/``` folder contains source files for:
   * Cora
   * Pubmed
   * Disease 
+  * Airport
 
 To run this code on new datasets, please add corresponding data processing and loading in ```load_data_nc``` and ```load_data_lp``` functions in ```utils/data_utils.py```.
 
@@ -167,6 +168,10 @@ We provide examples of training commands used to train HGCN and other graph embe
   * Disease (Test ROC-AUC: 87.14):
 
 ```python train.py --task lp --dataset disease_lp --model HGCN --lr 0.01 --dim 16 --num-layers 2 --num-layers 2 --act relu --bias 1 --dropout 0 --weight-decay 0 --manifold PoincareBall --normalize-feats 0 --log-freq 5```
+
+  * Airport (Test ROC-AUC=97.43):
+
+```python train.py --task lp --dataset airport --model HGCN --lr 0.01 --dim 16 --num-layers 2 --act relu --bias 1 --dropout 0.0 --weight-decay 0 --manifold PoincareBall --log-freq 5 --cuda 0 --c None```
 
 #### Node classification
 

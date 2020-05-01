@@ -26,6 +26,8 @@ def load_data(args, datapath):
     data['adj_train_norm'], data['features'] = process(
             data['adj_train'], data['features'], args.normalize_adj, args.normalize_feats
     )
+    if args.dataset == 'airport':
+        data['features'] = augment(data['adj_train'], data['features'])
     return data
 
 
@@ -63,6 +65,15 @@ def sparse_mx_to_torch_sparse_tensor(sparse_mx):
     values = torch.Tensor(sparse_mx.data)
     shape = torch.Size(sparse_mx.shape)
     return torch.sparse.FloatTensor(indices, values, shape)
+
+
+def augment(adj, features, normalize_feats=True):
+    deg = np.squeeze(np.sum(adj, axis=0).astype(int))
+    deg[deg > 5] = 5
+    deg_onehot = torch.tensor(np.eye(6)[deg], dtype=torch.float).squeeze()
+    const_f = torch.ones(features.size(0), 1)
+    features = torch.cat((features, deg_onehot, const_f), dim=1)
+    return features
 
 
 # ############### DATA SPLITS #####################################################
@@ -111,6 +122,11 @@ def split_data(labels, val_prop, test_prop, seed):
     return idx_val_pos + idx_val_neg, idx_test_pos + idx_test_neg, idx_train_pos + idx_train_neg
 
 
+def bin_feat(feat, bins):
+    digitized = np.digitize(feat, bins)
+    return digitized - digitized.min()
+
+
 # ############### LINK PREDICTION DATA LOADERS ####################################
 
 
@@ -119,6 +135,8 @@ def load_data_lp(dataset, use_feats, data_path):
         adj, features = load_citation_data(dataset, use_feats, data_path)[:2]
     elif dataset == 'disease_lp':
         adj, features = load_synthetic_data(dataset, use_feats, data_path)[:2]
+    elif dataset == 'airport':
+        adj, features = load_data_airport(dataset, data_path, return_label=False)
     else:
         raise FileNotFoundError('Dataset {} is not supported.'.format(dataset))
     data = {'adj_train': adj, 'features': features}
@@ -135,19 +153,17 @@ def load_data_nc(dataset, use_feats, data_path, split_seed):
         )
     else:
         if dataset == 'disease_nc':
-            val_prop, test_prop = 0.10, 0.60
             adj, features, labels = load_synthetic_data(dataset, use_feats, data_path)
+            val_prop, test_prop = 0.10, 0.60
         elif dataset == 'airport':
-            # TODO
+            adj, features, labels = load_data_airport(dataset, data_path, return_label=True)
             val_prop, test_prop = 0.15, 0.15
-            pass
         else:
             raise FileNotFoundError('Dataset {} is not supported.'.format(dataset))
         idx_val, idx_test, idx_train = split_data(labels, val_prop, test_prop, seed=split_seed)
 
     labels = torch.LongTensor(labels)
-    data = {'adj_train': adj, 'features': features, 'labels': labels, 'idx_train': idx_train, 'idx_val': idx_val,
-            'idx_test': idx_test}
+    data = {'adj_train': adj, 'features': features, 'labels': labels, 'idx_train': idx_train, 'idx_val': idx_val, 'idx_test': idx_test}
     return data
 
 
@@ -223,3 +239,18 @@ def load_synthetic_data(dataset_str, use_feats, data_path):
         features = sp.eye(adj.shape[0])
     labels = np.load(os.path.join(data_path, "{}.labels.npy".format(dataset_str)))
     return sp.csr_matrix(adj), features, labels
+
+
+def load_data_airport(dataset_str, data_path, return_label=False):
+    graph = pkl.load(open(os.path.join(data_path, dataset_str + '.p'), 'rb'))
+    adj = nx.adjacency_matrix(graph)
+    features = np.array([graph.node[u]['feat'] for u in graph.nodes()])
+    if return_label:
+        label_idx = 4
+        labels = features[:, label_idx]
+        features = features[:, :label_idx]
+        labels = bin_feat(labels, bins=[7.0/7, 8.0/7, 9.0/7])
+        return sp.csr_matrix(adj), features, labels
+    else:
+        return sp.csr_matrix(adj), features
+
