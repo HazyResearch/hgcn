@@ -39,7 +39,8 @@ config_args = {
         'act': ('relu', 'which activation function to use (or None for no activation)'),
         'n-heads': (4, 'number of attention heads for graph attention networks, must be a divisor dim'),
         'alpha': (0.2, 'alpha for leakyrelu in graph attention networks'),
-        'double-precision': ('0', 'whether to use double precision')
+        'double-precision': ('0', 'whether to use double precision'),
+        'use-att': (0, 'whether to use hyperbolic attention or not'),
     },
     'data_config': {
         'dataset': ('cora', 'which dataset to use'),
