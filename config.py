@@ -41,6 +41,7 @@ config_args = {
         'alpha': (0.2, 'alpha for leakyrelu in graph attention networks'),
         'double-precision': ('0', 'whether to use double precision'),
         'use-att': (0, 'whether to use hyperbolic attention or not'),
+        'local-agg': (0, 'whether to local tangent space aggregation or not')
     },
     'data_config': {
         'dataset': ('cora', 'which dataset to use'),
