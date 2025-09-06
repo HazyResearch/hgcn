@@ -1,0 +1,3 @@
+[submodule "optimizers/fully-hyperbolic-nn"]
+	path = optimizers/fully-hyperbolic-nn
+	url = git@github.com:LawrenceGrigoryan/fully-hyperbolic-nn.git
